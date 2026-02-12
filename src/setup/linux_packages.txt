@@ -1,0 +1,5 @@
+geographiclib-tools
+ros-humble-geographic-msgs
+ros-humble-mavros
+ros-humble-mavros-extras
+ros-humble-rosbridge-server

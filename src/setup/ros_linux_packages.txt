@@ -1,0 +1,6 @@
+locales
+curl
+python3-colcon-common-extensions
+python3.10-venv
+python3-pip
+software-properties-common
