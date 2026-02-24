@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    image: fundunz/usv:orin-zed-v5.2
+    image: fundunz/usv:jetson-v1
     container_name: usv_dev_container
     
     # Critical for Jetson Hardware Access

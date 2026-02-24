@@ -1,0 +1,60 @@
+# 1. Base Image (NVIDIA optimized ROS 2)
+FROM docker.io/dustynv/ros:humble-desktop-l4t-r36.2.0
+
+# Prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 2. Fix ROS GPG Key and Add Official ROS 2 Repo
+RUN apt-get update || true && apt-get install -y curl gnupg2 lsb-release && \
+    curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" > /etc/apt/sources.list.d/ros2-latest.list
+
+# 3. Essential System Dependencies
+# Keep this super clean. Just the basics to get rosdep working.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget zstd git python3-pip python3-rosdep \
+    libusb-1.0-0-dev vim \
+    libqt5xml5 libx11-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 4. ZED SDK (L4T 36.3 version for JetPack 6)
+RUN wget -q --no-check-certificate -O ZED_SDK_Linux.run https://download.stereolabs.com/zedsdk/5.2/l4t36.3/jetsons && \
+    chmod +x ZED_SDK_Linux.run && \
+    ./ZED_SDK_Linux.run -- silent runtime_only && \
+    rm ZED_SDK_Linux.run
+
+# 5. Python AI & Hardware Libs
+# We force numpy < 2.0 to fix the "missing core/include" build error
+RUN pip3 install --no-cache-dir --ignore-installed \
+    ultralytics \
+    pyserial \
+    cython \
+    "numpy<2.0" \
+    sympy \
+    typing-extensions
+
+# 6. Workspace Setup
+WORKDIR /ros2_ws/src
+RUN git clone --recursive https://github.com/stereolabs/zed-ros2-wrapper.git && \
+    git clone https://github.com/stereolabs/zed-ros2-interfaces && \
+    git clone -b humble https://github.com/ros-perception/vision_opencv.git
+
+# 7. The Build (With Workspace Overlay Fix)
+WORKDIR /ros2_ws
+SHELL ["/bin/bash", "-c"]
+
+# Source the NVIDIA path, then manually add the Ubuntu apt path to CMake, THEN build.
+RUN . /opt/ros/humble/install/setup.bash && \
+    export CMAKE_PREFIX_PATH=/opt/ros/humble:$CMAKE_PREFIX_PATH && \
+    colcon build --symlink-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --event-handlers console_direct+
+
+# 8. Environment Persistence
+# Ensures that when you 'docker exec -it usv bash', the ROS paths are already loaded
+RUN echo "source /opt/ros/humble/install/setup.bash" >> /root/.bashrc && \
+    echo "source /ros2_ws/install/setup.bash" >> /root/.bashrc
+
+# Uses the NVIDIA entrypoint to ensure hardware paths are mapped on startup
+ENTRYPOINT ["/ros_entrypoint.sh"]
+CMD ["bash"]
