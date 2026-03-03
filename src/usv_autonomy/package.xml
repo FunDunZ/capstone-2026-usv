@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>usv_autonomy</name>
+  <version>2.0.0</version>
+  <description>USV autonomous navigation stack ROS 2 nodes</description>
+  <maintainer email="you@example.com">Andrew Thomas</maintainer>
+  <license>MIT</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>usv_msgs</depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
